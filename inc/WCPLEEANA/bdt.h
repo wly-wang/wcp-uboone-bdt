@@ -1,3 +1,8 @@
+#ifndef UBOONE_LEE_BDT
+#define UBOONE_LEE_BDT
+
+#include "TMVA/Reader.h"
+
 namespace LEEana{
 
   float cal_nc_delta_bdts_xgboost(TaggerInfo& tagger_info, TMVA::Reader& reader);
@@ -124,6 +129,8 @@ float cal_tro_5_bdt(float default_val , TaggerInfo& tagger_info, TMVA::Reader& r
 		    float& tro_5_v_max_count,
 		    float& tro_5_v_energy);
 
+TMVA::Reader* fetch_bdtreader(TString var_name);
+
 }
 
 // May 26th added by LEE
@@ -139,7 +146,7 @@ float LEEana::cal_nc_delta_bdts_xgboost(TaggerInfo& tagger_info, TMVA::Reader& r
 
 float LEEana::cal_nc_delta_0track_bdts_xgboost(TaggerInfo& tagger_info, TMVA::Reader& reader) {
   float val = -20;
-  
+
   double val1 = reader.EvaluateMVA("MyBDT");
 
   val = TMath::Log10( (1+val1)/(1-val1) );
@@ -648,3 +655,49 @@ float LEEana::cal_bdts_xgboost(TaggerInfo& tagger_info, TMVA::Reader& reader){
 
   return val;
 }
+
+
+TMVA::Reader* LEEana::fetch_bdtreader(TString var_name){
+	if(var_name == "wwang_numu_numubar_BDT"){
+		TMVA::Reader* reader = new TMVA::Reader();
+		float Num_Proton;
+		float Num_Gamma;
+    float Num_Muon;
+    float Num_Electron;
+    float cos_theta;
+    float numu_1_score;
+    float numu_cc_3_track_length;
+    float numu_cc_3_max_length_all;
+    float cosmict_2_dQ_dx_front;
+    float cosmict_2_dQ_dx_end;
+    float cosmict_2_angle_beam;
+    float cosmict_2_phi;
+    float numu_cc_3_max_length;
+    float numu_cc_3_max_muon_length;
+    float has_reco_michel; 
+
+		reader->AddVariable("Num_Proton", &Num_Proton);
+    reader->AddVariable("Num_Gamma", &Num_Gamma);
+    reader->AddVariable("Num_Muon", &Num_Muon);
+    reader->AddVariable("Num_Electron", &Num_Electron);
+    reader->AddVariable("cos_theta", &cos_theta);
+    reader->AddVariable("numu_1_score", &numu_1_score);
+    reader->AddVariable("numu_cc_3_track_length", &numu_cc_3_track_length);
+    reader->AddVariable("numu_cc_3_max_length_all", &numu_cc_3_max_length_all);
+    reader->AddVariable("cosmict_2_dQ_dx_front", &cosmict_2_dQ_dx_front);
+    reader->AddVariable("cosmict_2_dQ_dx_end", &cosmict_2_dQ_dx_end);
+    reader->AddVariable("cosmict_2_angle_beam", &cosmict_2_angle_beam);
+    reader->AddVariable("cosmict_2_phi", &cosmict_2_phi);
+    reader->AddVariable("numu_cc_3_max_length", &numu_cc_3_max_length);
+    reader->AddVariable("numu_cc_3_max_muon_length", &numu_cc_3_max_muon_length);
+    reader->AddVariable("has_reco_michel", &has_reco_michel);
+
+		reader->BookMVA(var_name+"_FHC", "bdt_weights/"+var_name+"_FHC.xml");
+		reader->BookMVA(var_name+"_RHC", "bdt_weights/"+var_name+"_RHC.xml");
+
+		return reader;
+	}
+	return nullptr;
+}
+
+#endif

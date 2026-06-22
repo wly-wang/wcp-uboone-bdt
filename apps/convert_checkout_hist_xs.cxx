@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "WCPLEEANA/master_cov_matrix.h"
 
@@ -8,10 +9,17 @@
 #include "TFile.h"
 #include "TTree.h"
 
+#include "TMVA/Factory.h"
+#include "TMVA/DataLoader.h"
+#include "TMVA/Tools.h"
+#include "TMVA/TMVAGui.h"
+#include "TMVA/Reader.h"
+
 #include "WCPLEEANA/cuts.h"
 #include "WCPLEEANA/pot.h"
 #include "WCPLEEANA/pfeval.h"
 #include "WCPLEEANA/eval.h"
+#include "WCPLEEANA/bdt.h"
 
 using namespace std;
 using namespace LEEana;
@@ -24,6 +32,12 @@ int main( int argc, char** argv )
 
   
   bool flag_data = true;
+  int flag_bdt = 0;
+  TString bdt_varname = "";
+  if (argc == 4 && (argv[3][1] == 'b')){
+    flag_bdt = 1;
+    bdt_varname = &argv[3][2];
+  }
 
   TFile *file = new TFile(input_filename,"READ");
   
@@ -200,9 +214,9 @@ int main( int argc, char** argv )
   T_eval->SetBranchStatus("stm_FullDead",1);
   T_eval->SetBranchStatus("stm_clusterlength",1);
 
-  // T_eval->SetBranchStatus("run",1);
-  // T_eval->SetBranchStatus("subrun",1);
-  // T_eval->SetBranchStatus("event",1);
+  T_eval->SetBranchStatus("run",1);
+  T_eval->SetBranchStatus("subrun",1);
+  T_eval->SetBranchStatus("event",1);
   
   if (!flag_data){
     T_eval->SetBranchStatus("weight_spline",1);
@@ -275,6 +289,11 @@ int main( int argc, char** argv )
         T_PFeval->SetBranchStatus("truth_startMomentum",1);
       }
   }
+  if(T_PFeval->GetBranch("reco_mother")){//prevents throwing an error for the non _PF files
+    T_PFeval->SetBranchStatus("reco_Ntrack",1);
+    T_PFeval->SetBranchStatus("reco_pdg",1); 
+    T_PFeval->SetBranchStatus("reco_mother",1); 
+  }
   if (pfeval.flag_NCDelta){
     
       if (!flag_data){
@@ -296,7 +315,11 @@ int main( int argc, char** argv )
   }
 
   std::cout << "Total entries: " << T_eval->GetEntries() << std::endl;
-
+  std::shared_ptr<TMVA::Reader> reader = 0;
+  if(flag_bdt){
+    reader = std::shared_ptr<TMVA::Reader>(fetch_bdtreader(bdt_varname));
+    cov.set_bdt_reader(reader);
+  }
 
   for (Int_t i=0;i!=T_eval->GetEntries();i++){
     T_BDTvars->GetEntry(i);
@@ -317,9 +340,9 @@ int main( int argc, char** argv )
       TString weight = std::get<7>(*it);
 
       // get kinematics variable ...
-      double val = get_kine_var(kine, eval, pfeval, tagger, flag_data, var_name);
+      double val = get_kine_var(kine, eval, pfeval, tagger, flag_data, var_name, reader);
       // get pass or not
-      bool flag_pass = get_cut_pass(ch_name, add_cut, flag_data, eval, pfeval, tagger, kine);
+      bool flag_pass = get_cut_pass(ch_name, add_cut, flag_data, eval, pfeval, tagger, kine, reader);
       int signal_bin = -1;
       if (cov.is_xs_chname(ch_name))
 	signal_bin = get_xs_signal_no(cov.get_cut_file(), cov.get_map_cut_xs_bin(), eval, pfeval, tagger, kine);

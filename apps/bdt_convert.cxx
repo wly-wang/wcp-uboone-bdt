@@ -2991,6 +2991,19 @@ int main( int argc, char** argv )
   reader_nc_pi0.AddVariable("kine_pio_angle",&kine.kine_pio_angle);
   reader_nc_pi0.BookMVA( "MyBDT", "weights/ncpio_weights_TMVA.xml");
 
+
+  // numubar/numu separation BDT (William Wang @ Edinburgh)
+  TMVA::Reader reader_numubar_numu_separation;
+  reader_numubar_numu_separation.AddVariable("numu_1_score",&tagger.numu_1_score);
+  reader_numubar_numu_separation.AddVariable("numu_cc_3_track_length",&tagger.numu_cc_3_track_length);
+  reader_numubar_numu_separation.AddVariable("numu_cc_3_max_length_all",&tagger.numu_cc_3_max_length_all);
+  reader_numubar_numu_separation.AddVariable("cosmict_2_dQ_dx_front",&tagger.cosmict_2_dQ_dx_front);
+  reader_numubar_numu_separation.AddVariable("cosmict_2_dQ_dx_end",&tagger.cosmict_2_dQ_dx_end);
+  reader_numubar_numu_separation.AddVariable("cosmict_2_angle_beam",&tagger.cosmict_2_angle_beam);
+  reader_numubar_numu_separation.AddVariable("cosmict_2_phi",&tagger.cosmict_2_phi);
+  reader_numubar_numu_separation.AddVariable("numu_cc_3_max_length",&tagger.numu_cc_3_max_length);
+  reader_numubar_numu_separation.AddVariable("numu_cc_3_max_muon_length",&tagger.numu_cc_3_max_muon_length);
+  reader_nc_pi0.BookMVA( "MyBDT", "weights/ncpio_weights_TMVA.xml");
   
   std::map<std::pair<int, int>, int> map_rs_n;
   std::map<std::pair<int, int>, std::set<int> > map_rs_f1p5; // Reco 1.5

@@ -4,6 +4,7 @@
 // define cuts here ...
 #include "TCut.h"
 #include "TString.h"
+#include "TVector3.h"
 #include "TLorentzVector.h"
 #include "TH1F.h"
 
@@ -12,6 +13,13 @@
 #include "eval.h"
 #include "pfeval.h"
 
+#include "TMVA/Factory.h"
+#include "TMVA/DataLoader.h"
+#include "TMVA/Tools.h"
+#include "TMVA/TMVAGui.h"
+#include "TMVA/Reader.h"
+
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <fstream>
@@ -31,10 +39,10 @@ namespace LEEana{
   double get_reco_Eproton(KineInfo& kine);
   double get_reco_Epion(KineInfo& kine);
 
-  double get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data, TString var_name="kine_reco_Enu");
+  double get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data, TString var_name="kine_reco_Enu", std::shared_ptr<TMVA::Reader> reader = 0);
   double get_truth_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, TString var_name); 
  
-  bool get_cut_pass(TString ch_name, TString add_cut, bool flag_data, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine);
+  bool get_cut_pass(TString ch_name, TString add_cut, bool flag_data, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine, std::shared_ptr<TMVA::Reader> reader = 0);
   bool get_rw_cut_pass(TString cut, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine);
   double get_weight(TString weight_name, EvalInfo& eval, PFevalInfo& pfeval, KineInfo& kine, TaggerInfo& tagger, std::tuple< bool, std::vector< std::tuple<bool, TString, TString, double, double, bool, bool, bool,  std::vector<double>, std::vector<double>  > > > rw_info, bool flag_data=false);
   int get_xs_signal_no(int cut_file, std::map<TString, int>& map_cut_xs_bin, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine);
@@ -101,6 +109,11 @@ namespace LEEana{
 
   int mcc8_pmuon_costheta_bin(float pmuon, float costh);
   int alt_var_index(std::string var1, float val1, std::string var2, float val2, std::string config="./configurations/alt_var_xbins.txt");
+
+  // William's numu/numubar separation BDT
+  float calc_wwang_numu_numubar_BDT(std::shared_ptr<TMVA::Reader> reader, KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool is_fhc=1);
+  bool isFHC(EvalInfo& eval);
+
   std::map<std::string, TH1F> map_var_hist; // variable name and binning
 }
 
@@ -275,7 +288,7 @@ double LEEana::get_truth_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval,
 }
 
 
-double LEEana::get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data , TString var_name){
+double LEEana::get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data , TString var_name, TMVA::Reader* reader){
   //  if (var_name == "kine_reco_Enu"){
   //  return kine.kine_reco_Enu;
   //  }else
@@ -783,6 +796,15 @@ double LEEana::get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, 
         } else {
                 std::cout << "No such proton-pi0 variable: " << var_name << std::endl;
         }
+  }
+  else if(var_name == "wwang_numu_numubar_BDT"){
+    if(!reader){
+      std::cout << "BDT not loaded for " << var_name << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    bool is_fhc = isFHC(eval);
+    float bdt_val = calc_wwang_numu_numubar_BDT(reader, kine, eval, pfeval, tagger, is_fhc);
+    return bdt_val;
   }else{
     std::cout << "No such variable: " << var_name << std::endl;
     exit(EXIT_FAILURE);
@@ -1632,7 +1654,8 @@ int LEEana::get_xs_signal_no(int cut_file, std::map<TString, int>& map_cut_xs_bi
   return -1;
 }
 
-bool LEEana::get_cut_pass(TString ch_name, TString add_cut, bool flag_data, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine){
+bool LEEana::get_cut_pass(TString ch_name, TString add_cut, bool flag_data, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, KineInfo& kine, std::shared_ptr<TMVA::Reader> reader){
+
 
 
   double reco_Enu = get_reco_Enu_corr(kine, flag_data);
@@ -4062,6 +4085,156 @@ int LEEana::alt_var_index(std::string var1, float val1, std::string var2, float 
   }
 
   return -1;
+}
+
+float LEEana::calc_wwang_numu_numubar_BDT(std::shared_ptr<TMVA::Reader> reader, KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool is_fhc){
+
+  float Num_Proton = 0.;
+  float Num_Gamma = 0.;
+  float Num_Muon = 0.;
+  float Num_Electron = 0.;
+  float cos_theta = -999.;
+  float numu_1_score;
+  float numu_cc_3_track_length;
+  float numu_cc_3_max_length_all;
+  float cosmict_2_dQ_dx_front;
+  float cosmict_2_dQ_dx_end;
+  float cosmict_2_angle_beam;
+  float cosmict_2_phi;
+  float numu_cc_3_max_length;
+  float numu_cc_3_max_muon_length;
+  float has_reco_michel = 0.;
+
+  for(size_t i=0; i<pfeval.reco_Ntrack; i++)
+  {
+    int pdgcode = kine.kine_particle_type->at(i);
+    if(abs(pdgcode)== 2212 && pfeval.reco_mother[i] == 0){
+      Num_Proton += 1;
+    }
+  }
+
+  for(int i = 0; i < pfeval.reco_Ntrack; i++)
+  {
+    int pdgcode = pfeval.reco_pdg[i];
+    if (abs(pdgcode) == 22 && pfeval.reco_mother[i] == 0)
+      Num_Gamma += 1;
+  }
+
+  for(int i = 0; i < pfeval.reco_Ntrack; i++)
+  {
+    int pdgcode = pfeval.reco_pdg[i];
+    if (abs(pdgcode) == 13 && pfeval.reco_mother[i] == 0)
+      Num_Muon += 1;
+  }
+
+  for(int i = 0; i < pfeval.reco_Ntrack; i++)
+  {
+    int pdgcode = pfeval.reco_pdg[i];
+    if (abs(pdgcode) == 11 && pfeval.reco_mother[i] == 0)
+      Num_Electron += 1;
+  }
+
+//======================================================
+// Reconstructed lepton-neutrino direction angle
+//======================================================
+
+  TVector3 numi_pos(-31387.58422, -3316.402543, -60100.2414);
+  TVector3 reco_nuvtx(pfeval.reco_nuvtxX, pfeval.reco_nuvtxY, pfeval.reco_nuvtxZ);
+  TVector3 diff = reco_nuvtx - numi_pos;
+  TVector3 muonMomentum(pfeval.reco_muonMomentum[0], pfeval.reco_muonMomentum[1], pfeval.reco_muonMomentum[2]);
+  cos_theta = diff.Dot(muonMomentum)/(diff.Mag() * muonMomentum.Mag());
+
+  numu_1_score = tagger.numu_1_score;
+  numu_cc_3_track_length = tagger.numu_cc_3_acc_track_length;
+  numu_cc_3_max_length_all = tagger.numu_cc_3_max_length_all;
+  cosmict_2_dQ_dx_front = tagger.cosmict_2_dQ_dx_front;
+  cosmict_2_dQ_dx_end = tagger.cosmict_2_dQ_dx_end;
+  cosmict_2_angle_beam = tagger.cosmict_2_angle_beam;
+  cosmict_2_phi = tagger.cosmict_2_phi;
+  numu_cc_3_max_length = tagger.numu_cc_3_max_length;
+  numu_cc_3_max_muon_length = tagger.numu_cc_3_max_muon_length;
+
+//======================================================
+// Reconstructed Michel electron tag
+//======================================================
+
+for (int i = 0; i < pfeval.reco_Ntrack; i++) {
+
+  int pdg_mu = pfeval.reco_pdg[i];
+
+  // Primary reconstructed muon
+  if (std::abs(pdg_mu) == 13 && pfeval.reco_mother[i] == 0) {
+
+    TVector3 muon_end(
+      pfeval.reco_endXYZT[i][0],
+      pfeval.reco_endXYZT[i][1],
+      pfeval.reco_endXYZT[i][2]
+    );
+
+    // Look for Michel candidate
+    for (int j = 0; j < pfeval.reco_Ntrack; j++) {
+
+      if (j == i) continue;
+
+      TVector3 cand_start(
+        pfeval.reco_startXYZT[j][0],
+        pfeval.reco_startXYZT[j][1],
+        pfeval.reco_startXYZT[j][2]
+      );
+
+      TVector3 cand_end(
+        pfeval.reco_endXYZT[j][0],
+        pfeval.reco_endXYZT[j][1],
+        pfeval.reco_endXYZT[j][2]
+      );
+
+      float dist_to_muon_end = (cand_start - muon_end).Mag();
+      float candidate_length = (cand_end - cand_start).Mag();
+      float energy = pfeval.reco_startMomentum[j][3];
+
+      if (dist_to_muon_end <= 5.0 &&
+          candidate_length <= 10.0 &&
+          energy <= 0.07) {
+
+        has_reco_michel = 1.;
+        break;
+      }
+    }
+
+    break; // 1 primary muon per event
+  }
+}
+ 
+
+  // std::cout << Num_Proton << ", " << Num_Neutron << ", " << cos_theta << ", " << shower_energy << ", " << kine_reco_Enu << ", " << mip_quality_n_showers << "\n";
+
+  std::vector<float> values = {Num_Proton, Num_Gamma, Num_Muon, Num_Electron, cos_theta, 
+                              numu_1_score, numu_cc_3_track_length, numu_cc_3_max_length_all, 
+                              cosmict_2_dQ_dx_front, cosmict_2_dQ_dx_end, cosmict_2_angle_beam, 
+                              cosmict_2_phi, numu_cc_3_max_length, numu_cc_3_max_muon_length,
+                              has_reco_michel};
+  float bdt_val = -5.;
+  if(is_fhc)
+    bdt_val = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC");
+  else
+    bdt_val = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC");
+  if(std::isnan(bdt_val))
+    return -5.;
+  // std::cout << "BDT val : " << bdt_val << std::endl;
+  return bdt_val;
+}
+
+// fetch FHC or RHC run from here :
+// https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/NuMI_Documentation
+bool LEEana::isFHC(EvalInfo& eval)
+{
+  if (eval.run < 6748 || (eval.run == 6748 && eval.subrun <= 22)) return true; // run 1
+  else if(eval.run <= 7001) return false;
+  else if(eval.run <= 10139) return true; // run 2
+  else if(eval.run <= 11949) return false;
+  else if(eval.run <= 17566) return false; // run 3
+  else if(eval.run <= 21410) return false;
+  else return true;
 }
 
 #endif

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "WCPLEEANA/master_cov_matrix.h"
 
@@ -8,10 +9,17 @@
 #include "TFile.h"
 #include "TTree.h"
 
+#include "TMVA/Factory.h"
+#include "TMVA/DataLoader.h"
+#include "TMVA/Tools.h"
+#include "TMVA/TMVAGui.h"
+#include "TMVA/Reader.h"
+
 #include "WCPLEEANA/cuts.h"
 #include "WCPLEEANA/pot.h"
 #include "WCPLEEANA/pfeval.h"
 #include "WCPLEEANA/eval.h"
+#include "WCPLEEANA/bdt.h"
 
 using namespace std;
 using namespace LEEana;
@@ -25,10 +33,16 @@ int main( int argc, char** argv )
   bool flag_data = true;
 
   bool flag_osc = false;
+  int flag_bdt = 0;
+  TString bdt_varname = "";
   for (Int_t i=1;i!=argc;i++){
     switch(argv[i][1]){
     case 'o':
       flag_osc = atoi(&argv[i][2]); // run oscillation
+      break;
+    case 'b':
+      flag_bdt = 1;
+      bdt_varname = &argv[i][2];  // load bdt model
       break;
     }
   }
@@ -77,7 +91,14 @@ int main( int argc, char** argv )
   if (ext_pot != 0) total_pot = ext_pot;
   
   std::cout << "Total POT: " << total_pot << " external POT: " << ext_pot << std::endl;
+  std::shared_ptr<TMVA::Reader> reader = 0;
+  if(flag_bdt){
+    reader = std::shared_ptr<TMVA::Reader>(fetch_bdtreader(bdt_varname));
+    cov.set_bdt_reader(reader);
+  }
 
+  if(reader)
+    std::cout << " Fetched my BDT " << "\n";
   
   // prepare histograms ...
   // declare histograms ...
@@ -192,6 +213,9 @@ int main( int argc, char** argv )
   T_eval->SetBranchStatus("stm_STM",1);
   T_eval->SetBranchStatus("stm_FullDead",1);
   T_eval->SetBranchStatus("stm_clusterlength",1);
+  T_eval->SetBranchStatus("run",1);
+  T_eval->SetBranchStatus("subrun",1);
+  T_eval->SetBranchStatus("event",1);
   
   if (!flag_data){
     T_eval->SetBranchStatus("weight_spline",1);
@@ -265,6 +289,13 @@ int main( int argc, char** argv )
       }
       
   }
+  if(T_PFeval->GetBranch("reco_mother")){//prevents throwing an error for the non _PF files
+    T_PFeval->SetBranchStatus("reco_Ntrack",1);
+    T_PFeval->SetBranchStatus("reco_pdg",1); 
+    T_PFeval->SetBranchStatus("reco_mother",1); 
+  }
+
+
   if (pfeval.flag_NCDelta){
     
       if (!flag_data){
@@ -316,9 +347,9 @@ int main( int argc, char** argv )
  
       htemp = map_histoname_hist[histoname];
       // get kinematics variable ...
-      double val = get_kine_var(kine, eval, pfeval, tagger, flag_data, var_name);
+      double val = get_kine_var(kine, eval, pfeval, tagger, flag_data, var_name, reader);
       // get pass or not
-      bool flag_pass = get_cut_pass(ch_name, add_cut, flag_data, eval, pfeval, tagger, kine);
+      bool flag_pass = get_cut_pass(ch_name, add_cut, flag_data, eval, pfeval, tagger, kine, reader);
 
       double osc_weight = 1.0;
 
