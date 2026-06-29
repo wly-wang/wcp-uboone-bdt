@@ -4,3 +4,7 @@ build
 bin/
 lib/
 bdt_weights/
+/install/
+setup_wcp_bdt.sh
+*.bak
+*.bak-before-tracklength-fix

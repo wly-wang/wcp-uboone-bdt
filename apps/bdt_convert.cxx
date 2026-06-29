@@ -2995,7 +2995,7 @@ int main( int argc, char** argv )
   // numubar/numu separation BDT (William Wang @ Edinburgh)
   TMVA::Reader reader_numubar_numu_separation;
   reader_numubar_numu_separation.AddVariable("numu_1_score",&tagger.numu_1_score);
-  reader_numubar_numu_separation.AddVariable("numu_cc_3_track_length",&tagger.numu_cc_3_track_length);
+  reader_numubar_numu_separation.AddVariable("numu_cc_3_track_length",&tagger.numu_cc_3_acc_track_length);
   reader_numubar_numu_separation.AddVariable("numu_cc_3_max_length_all",&tagger.numu_cc_3_max_length_all);
   reader_numubar_numu_separation.AddVariable("cosmict_2_dQ_dx_front",&tagger.cosmict_2_dQ_dx_front);
   reader_numubar_numu_separation.AddVariable("cosmict_2_dQ_dx_end",&tagger.cosmict_2_dQ_dx_end);
