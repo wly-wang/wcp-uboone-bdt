@@ -12,6 +12,7 @@
 #include "kine.h"
 #include "eval.h"
 #include "pfeval.h"
+#include "bdt.h"
 
 #include "TMVA/Factory.h"
 #include "TMVA/DataLoader.h"
@@ -288,7 +289,7 @@ double LEEana::get_truth_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval,
 }
 
 
-double LEEana::get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data , TString var_name, TMVA::Reader* reader){
+double LEEana::get_kine_var(KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool flag_data , TString var_name, std::shared_ptr<TMVA::Reader> reader){
   //  if (var_name == "kine_reco_Enu"){
   //  return kine.kine_reco_Enu;
   //  }else

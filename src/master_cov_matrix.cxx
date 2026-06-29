@@ -214,7 +214,7 @@ LEEana::CovMatrix::CovMatrix(TString cov_filename, TString cv_filename, TString 
   std::ifstream infile1(cv_filename);
   while(!infile1.eof()){
     infile1 >> filetype >> name >> period >> input_filename >> out_filename >> ext_pot >> file_no >> norm_pot >> norm_period;
-    //std::cout << filetype << " " << out_filename << " " << file_no << std::endl;
+    std::cout << filetype << " " << out_filename << " " << file_no << std::endl;
     
     if (filetype == -1) break;
     
@@ -252,8 +252,6 @@ LEEana::CovMatrix::CovMatrix(TString cov_filename, TString cv_filename, TString 
     for (auto it1 = map_inputfile_cuts[filename].begin(); it1 != map_inputfile_cuts[filename].end(); it1++){
       TString add_cut = *it1;
 
-      //      std::cout << filename << " " << add_cut << std::endl;
-      
       for (auto it2 = map_filetype_chs[filetype].begin(); it2 != map_filetype_chs[filetype].end(); it2++){
 	int ch = *it2;
 	auto it3 = map_ch_hist.find(ch);
@@ -265,8 +263,6 @@ LEEana::CovMatrix::CovMatrix(TString cov_filename, TString cv_filename, TString 
 	float hlimit = std::get<4>(it3->second);
 	TString weight = std::get<5>(it3->second);
 	int lee_strength = std::get<7>(it3->second);
-
-	//std::cout << name << " " << lee_strength << std::endl;
 	
 	TString weight2 = weight + "_" + weight;
 	TString histo_name = name + Form("_%d_",file_no) + var_name + "_" + add_cut;
@@ -1746,6 +1742,11 @@ std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_wei
     T_PFeval->SetBranchStatus("truth_startMomentum",1); 
   }
 
+  if(T_PFeval->GetBranch("reco_mother")){//prevents throwing an error for the non _PF files
+    T_PFeval->SetBranchStatus("reco_Ntrack",1);
+    T_PFeval->SetBranchStatus("reco_pdg",1); 
+    T_PFeval->SetBranchStatus("reco_mother",1); 
+  }
 
   WeightInfo weight;
   TTree *T_weight = (TTree*)file->Get("wcpselection/T_weight");
@@ -1868,8 +1869,8 @@ std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_wei
       auto it3 = disabled_ch_names.find(ch_name);
       if (it3 != disabled_ch_names.end()) continue;
       
-      float val = get_kine_var(kine, eval, pfeval, tagger, false, var_name);
-      bool flag_pass = get_cut_pass(ch_name, add_cut, false, eval, pfeval, tagger, kine);
+      float val = get_kine_var(kine, eval, pfeval, tagger, false, var_name, fReader);
+      bool flag_pass = get_cut_pass(ch_name, add_cut, false, eval, pfeval, tagger, kine, fReader);
       int signal_bin = -1;
       if (xs_signal_ch_names.find(ch_name) != xs_signal_ch_names.end()){
 	signal_bin = get_xs_signal_no(cut_file, map_cut_xs_bin, eval, pfeval, tagger, kine);
