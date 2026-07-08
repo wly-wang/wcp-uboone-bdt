@@ -69,6 +69,7 @@ namespace LEEana{
   // TCut numuCC_cut = "numu_cc_flag >=0 && numu_score > 0.9";
   bool is_numuCC(TaggerInfo& tagger_info);
   bool is_numuCC_tight(TaggerInfo& tagger_info, PFevalInfo& pfeval);
+  bool is_wwang_numu_numubar(TaggerInfo& tagger_info, PFevalInfo& pfeval, EvalInfo& eval);
   bool is_numuCC_1mu0p(TaggerInfo& tagger_info, KineInfo& kine, PFevalInfo& pfeval);
   
   bool is_0p(TaggerInfo& tagger_info, KineInfo& kine, PFevalInfo& pfeval);
@@ -1843,6 +1844,18 @@ bool LEEana::get_cut_pass(TString ch_name, TString add_cut, bool flag_data, Eval
   bool flag_numuCC = is_numuCC(tagger);
   //bool flag_numuCC = is_numuCC(tagger) && (is_far_sideband(kine, tagger, flag_data) || is_near_sideband(kine, tagger, flag_data) );
   bool flag_numuCC_tight = is_numuCC_tight(tagger, pfeval);
+
+  bool flag_wwang_numu_numubar = is_wwang_numu_numubar(tagger, pfeval, eval);
+
+  bool truth_wwang_numu =
+    eval.truth_isCC == 1 && eval.truth_nuPdg == 14;
+
+  bool truth_wwang_numubar =
+    eval.truth_isCC == 1 && eval.truth_nuPdg == -14;
+
+  bool truth_wwang_other =
+    !(truth_wwang_numu || truth_wwang_numubar);
+
   bool flag_numuCC_1mu0p = is_numuCC_1mu0p(tagger, kine, pfeval);
   bool flag_numuCC_lowEhad = is_numuCC_lowEhad(tagger, kine, pfeval, flag_data);
   bool flag_numuCC_cutbased = is_numuCC_cutbased(tagger);
@@ -1875,6 +1888,30 @@ bool LEEana::get_cut_pass(TString ch_name, TString add_cut, bool flag_data, Eval
   if (ch_name == "LEE_FC_nueoverlay"  || ch_name == "nueCC_FC_nueoverlay"){
     if (flag_nueCC && flag_FC && flag_truth_inside) return true;
     else return false;
+  }else if (ch_name == "wwang_numu_numubar_FHC_data" ||
+            ch_name == "wwang_numu_numubar_RHC_data"){
+    return flag_wwang_numu_numubar;
+
+  }else if (ch_name == "wwang_numu_numubar_FHC_ext" ||
+            ch_name == "wwang_numu_numubar_RHC_ext"){
+    return flag_wwang_numu_numubar;
+
+  }else if (ch_name == "wwang_numu_numubar_FHC_dirt" ||
+            ch_name == "wwang_numu_numubar_RHC_dirt"){
+    return flag_wwang_numu_numubar;
+
+  }else if (ch_name == "wwang_numu_numubar_FHC_numu" ||
+            ch_name == "wwang_numu_numubar_RHC_numu"){
+    return flag_wwang_numu_numubar && truth_wwang_numu;
+
+  }else if (ch_name == "wwang_numu_numubar_FHC_numubar" ||
+            ch_name == "wwang_numu_numubar_RHC_numubar"){
+    return flag_wwang_numu_numubar && truth_wwang_numubar;
+
+  }else if (ch_name == "wwang_numu_numubar_FHC_other" ||
+            ch_name == "wwang_numu_numubar_RHC_other"){
+    return flag_wwang_numu_numubar && truth_wwang_other;
+    
   }else if (ch_name == "nueCC_FC_nueoverlay_numi"){
     if (flag_nueCC && flag_FC && flag_truth_inside) return true;
     else return false;
@@ -3648,6 +3685,8 @@ bool LEEana::get_cut_pass(TString ch_name, TString add_cut, bool flag_data, Eval
       	  && (!(eval.truth_isCC==0 && pfeval.truth_NCDelta==1 && flag_truth_inside))) return true;
       // if (flag_FC  && (!flag_0p)) return true;
     }
+
+
     
     return false;
   }else{
@@ -3824,6 +3863,25 @@ bool LEEana::is_numuCC_tight(TaggerInfo& tagger_info, PFevalInfo& pfeval){
     flag = true;
   
   return flag;
+}
+
+bool LEEana::is_wwang_numu_numubar(TaggerInfo& tagger_info, PFevalInfo& pfeval, EvalInfo& eval){
+  const float tpc_xmin = 0.0,    tpc_xmax = 254.3;
+  const float tpc_ymin = -115.0, tpc_ymax = 117.0;
+  const float tpc_zmin = 0.6,    tpc_zmax = 1036.4;
+
+  bool fv_cut =
+    pfeval.reco_nuvtxX > tpc_xmin + 7.55 &&
+    pfeval.reco_nuvtxX < tpc_xmax - 3.0 &&
+    pfeval.reco_nuvtxY > tpc_ymin + 3.0 &&
+    pfeval.reco_nuvtxY < tpc_ymax - 17.47 &&
+    pfeval.reco_nuvtxZ > tpc_zmin + 15.0 &&
+    pfeval.reco_nuvtxZ < tpc_zmax - 3.0;
+
+  return tagger_info.numu_cc_flag >= 0 &&
+         fv_cut &&
+         pfeval.reco_muonMomentum[3] != -1 &&
+         eval.match_isFC == 1;
 }
 
 bool LEEana::is_0p(TaggerInfo& tagger_info, KineInfo& kine, PFevalInfo& pfeval){
