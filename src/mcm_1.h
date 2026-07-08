@@ -586,6 +586,9 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
     T_PFeval_cv->SetBranchStatus("reco_pdg",1); 
     T_PFeval_cv->SetBranchStatus("reco_mother",1); 
   }
+  if (T_PFeval_cv->GetBranch("reco_startXYZT")) T_PFeval_cv->SetBranchStatus("reco_startXYZT",1);
+  if (T_PFeval_cv->GetBranch("reco_endXYZT")) T_PFeval_cv->SetBranchStatus("reco_endXYZT",1);
+  if (T_PFeval_cv->GetBranch("reco_startMomentum")) T_PFeval_cv->SetBranchStatus("reco_startMomentum",1);
 
   
    // fill histogram ...
@@ -724,6 +727,9 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
     T_PFeval_det->SetBranchStatus("reco_pdg",1); 
     T_PFeval_det->SetBranchStatus("reco_mother",1); 
   }
+  if (T_PFeval_det->GetBranch("reco_startXYZT")) T_PFeval_det->SetBranchStatus("reco_startXYZT",1);
+  if (T_PFeval_det->GetBranch("reco_endXYZT")) T_PFeval_det->SetBranchStatus("reco_endXYZT",1);
+  if (T_PFeval_det->GetBranch("reco_startMomentum")) T_PFeval_det->SetBranchStatus("reco_startMomentum",1);
   
   std::vector<std::tuple<int, int, double, double, std::set<std::tuple<int, double, bool, double, bool> > > > vec_events;
 

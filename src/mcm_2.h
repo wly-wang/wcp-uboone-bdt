@@ -744,6 +744,9 @@ std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_wei
     T_PFeval->SetBranchStatus("reco_pdg",1); 
     T_PFeval->SetBranchStatus("reco_mother",1); 
   }
+  if (T_PFeval->GetBranch("reco_startXYZT")) T_PFeval->SetBranchStatus("reco_startXYZT",1);
+  if (T_PFeval->GetBranch("reco_endXYZT")) T_PFeval->SetBranchStatus("reco_endXYZT",1);
+  if (T_PFeval->GetBranch("reco_startMomentum")) T_PFeval->SetBranchStatus("reco_startMomentum",1);
 
   WeightInfo weight;
   TTree *T_weight = (TTree*)file->Get("wcpselection/T_weight");

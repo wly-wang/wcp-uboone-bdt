@@ -53,21 +53,36 @@ int main( int argc, char** argv )
   TTree *T_PFeval_det = (TTree*)file2->Get("wcpselection/T_PFeval");
   TTree *T_KINEvars_det = (TTree*)file2->Get("wcpselection/T_KINEvars");
 
-  
-  TFile *file3 = new TFile(out_file,"RECREATE");
-  file3->mkdir("wcpselection");
-  file3->cd("wcpselection");
+
+  TFile *file3 = new TFile(out_file, "RECREATE");
+
+  TDirectory *dir = file3->mkdir("wcpselection");
+  if (!dir) dir = file3;
+  dir->cd();
+
   TTree *t1_cv = new TTree("T_eval_cv","T_eval_cv");
   TTree *t2_cv = new TTree("T_pot_cv","T_pot_cv");
   TTree *t3_cv = new TTree("T_PFeval_cv", "T_PFeval_cv");
   TTree *t5_cv = new TTree("T_KINEvars_cv", "T_KINEvars_cv");
   TTree *t4_cv = new TTree("T_BDTvars_cv","T_BDTvars_cv");
 
+  t1_cv->SetDirectory(dir);
+  t2_cv->SetDirectory(dir);
+  t3_cv->SetDirectory(dir);
+  t4_cv->SetDirectory(dir);
+  t5_cv->SetDirectory(dir);
+
   TTree *t1_det = new TTree("T_eval_det","T_eval_det");
   TTree *t2_det = new TTree("T_pot_det","T_pot_det");
   TTree *t3_det = new TTree("T_PFeval_det", "T_PFeval_det");
   TTree *t5_det = new TTree("T_KINEvars_det", "T_KINEvars_det");
   TTree *t4_det = new TTree("T_BDTvars_det","T_BDTvars_det");
+
+  t1_det->SetDirectory(dir);
+  t2_det->SetDirectory(dir);
+  t3_det->SetDirectory(dir);
+  t4_det->SetDirectory(dir);
+  t5_det->SetDirectory(dir);
 
   
 
