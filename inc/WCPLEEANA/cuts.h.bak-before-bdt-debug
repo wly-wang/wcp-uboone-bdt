@@ -19,7 +19,6 @@
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Reader.h"
-#include <cmath>
 
 #include <cstdlib>
 #include <map>
@@ -4267,22 +4266,6 @@ for (int i = 0; i < pfeval.reco_Ntrack; i++) {
  
 
   // std::cout << Num_Proton << ", " << Num_Neutron << ", " << cos_theta << ", " << shower_energy << ", " << kine_reco_Enu << ", " << mip_quality_n_showers << "\n";
-
-  auto clean_nan = [](float &x, float fallback) {
-    if (!std::isfinite(x)) x = fallback;
-  };
-
-  clean_nan(cos_theta, -999.);
-  clean_nan(numu_1_score, -999.);
-  clean_nan(numu_cc_3_track_length, -999.);
-  clean_nan(numu_cc_3_max_length_all, -999.);
-  clean_nan(cosmict_2_dQ_dx_front, -999.);
-  clean_nan(cosmict_2_dQ_dx_end, -999.);
-  clean_nan(cosmict_2_angle_beam, -999.);
-  clean_nan(cosmict_2_phi, -999.);
-  clean_nan(numu_cc_3_max_length, -999.);
-  clean_nan(numu_cc_3_max_muon_length, -999.);
-  clean_nan(has_reco_michel, -999.);
 
   std::vector<float> values = {Num_Proton, Num_Gamma, Num_Muon, Num_Electron, cos_theta, 
                               numu_1_score, numu_cc_3_track_length, numu_cc_3_max_length_all, 

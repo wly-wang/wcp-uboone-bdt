@@ -19,7 +19,6 @@
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Reader.h"
-#include <cmath>
 
 #include <cstdlib>
 #include <map>
@@ -4268,58 +4267,20 @@ for (int i = 0; i < pfeval.reco_Ntrack; i++) {
 
   // std::cout << Num_Proton << ", " << Num_Neutron << ", " << cos_theta << ", " << shower_energy << ", " << kine_reco_Enu << ", " << mip_quality_n_showers << "\n";
 
-  auto clean_nan = [](float &x, float fallback) {
-    if (!std::isfinite(x)) x = fallback;
-  };
-
-  clean_nan(cos_theta, -999.);
-  clean_nan(numu_1_score, -999.);
-  clean_nan(numu_cc_3_track_length, -999.);
-  clean_nan(numu_cc_3_max_length_all, -999.);
-  clean_nan(cosmict_2_dQ_dx_front, -999.);
-  clean_nan(cosmict_2_dQ_dx_end, -999.);
-  clean_nan(cosmict_2_angle_beam, -999.);
-  clean_nan(cosmict_2_phi, -999.);
-  clean_nan(numu_cc_3_max_length, -999.);
-  clean_nan(numu_cc_3_max_muon_length, -999.);
-  clean_nan(has_reco_michel, -999.);
-
   std::vector<float> values = {Num_Proton, Num_Gamma, Num_Muon, Num_Electron, cos_theta, 
                               numu_1_score, numu_cc_3_track_length, numu_cc_3_max_length_all, 
                               cosmict_2_dQ_dx_front, cosmict_2_dQ_dx_end, cosmict_2_angle_beam, 
                               cosmict_2_phi, numu_cc_3_max_length, numu_cc_3_max_muon_length,
                               has_reco_michel};
-  float raw_others = -999.;
-  float raw_numu = -999.;
-  float raw_numubar = -999.;
-
-  if (is_fhc) {
-    raw_others  = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_others");
-    raw_numu    = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_numuCC");
-    raw_numubar = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_numubarCC");
-  } else {
-    raw_others  = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_others");
-    raw_numu    = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_numuCC");
-    raw_numubar = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_numubarCC");
-  }
-
-  if (std::isnan(raw_others) || std::isnan(raw_numu) || std::isnan(raw_numubar))
+  float bdt_val = -5.;
+  if(is_fhc)
+    bdt_val = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC");
+  else
+    bdt_val = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC");
+  if(std::isnan(bdt_val))
     return -5.;
-
-  double max_raw = raw_others;
-  if (raw_numu > max_raw) max_raw = raw_numu;
-  if (raw_numubar > max_raw) max_raw = raw_numubar;
-
-  double e_others  = std::exp(raw_others  - max_raw);
-  double e_numu    = std::exp(raw_numu    - max_raw);
-  double e_numubar = std::exp(raw_numubar - max_raw);
-  double norm = e_others + e_numu + e_numubar;
-
-  double p_others  = e_others / norm;
-  double p_numu    = e_numu / norm;
-  double p_numubar = e_numubar / norm;
-
-  return -3.0*p_others - p_numu + p_numubar;
+  // std::cout << "BDT val : " << bdt_val << std::endl;
+  return bdt_val;
 }
 
 // fetch FHC or RHC run from here :

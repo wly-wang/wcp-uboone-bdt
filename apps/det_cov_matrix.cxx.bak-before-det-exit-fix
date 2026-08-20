@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <cstdlib>
 
 #include "WCPLEEANA/master_cov_matrix.h"
 #include "WCPLEEANA/bayes.h"
@@ -182,6 +181,4 @@ int main( int argc, char** argv )
   
   file->Write();
   file->Close();
-
-  std::_Exit(0);
 }

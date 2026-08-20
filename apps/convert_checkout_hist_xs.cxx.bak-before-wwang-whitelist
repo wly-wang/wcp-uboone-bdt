@@ -28,31 +28,24 @@ int main( int argc, char** argv )
 {
 
   TString input_filename = argv[1];
-  TString out_filename = argv[2];
+  TString out_filename =  argv[2];
 
+  
   bool flag_data = true;
-
-  bool flag_osc = false;
   int flag_bdt = 0;
   TString bdt_varname = "";
-  for (Int_t i=1;i!=argc;i++){
-    switch(argv[i][1]){
-    case 'o':
-      flag_osc = atoi(&argv[i][2]); // run oscillation
-      break;
-    case 'b':
-      flag_bdt = 1;
-      bdt_varname = &argv[i][2];  // load bdt model
-      break;
-    }
+  if (argc == 4 && (argv[3][1] == 'b')){
+    flag_bdt = 1;
+    bdt_varname = &argv[3][2];
   }
-  
-  
+
   TFile *file = new TFile(input_filename,"READ");
   
   CovMatrix cov;
-  if (flag_osc) cov.add_osc_config();
+  cov.add_xs_config();
   
+  std::cout << "Xs mode: " << std::endl;
+
   cov.print_rw(cov.get_rw_info());
   
   TTree *T_BDTvars = (TTree*)file->Get("wcpselection/T_BDTvars");
@@ -91,24 +84,19 @@ int main( int argc, char** argv )
   if (ext_pot != 0) total_pot = ext_pot;
   
   std::cout << "Total POT: " << total_pot << " external POT: " << ext_pot << std::endl;
-  std::shared_ptr<TMVA::Reader> reader = 0;
-  if(flag_bdt){
-    reader = std::shared_ptr<TMVA::Reader>(fetch_bdtreader(bdt_varname));
-    cov.set_bdt_reader(reader);
-  }
 
-  if(reader)
-    std::cout << " Fetched my BDT " << "\n";
   
   // prepare histograms ...
   // declare histograms ...
-  TH1F *htemp;
-  std::map<TString, TH1F*> map_histoname_hist;
+  TH1F *htemp = 0; TH1F *htemp1 = 0; TH2F *htemp2 = 0; int num = 0;
+  std::map<TString, std::tuple<TH1F*, TH1F*, TH2F*, int> > map_histoname_hists;
+  
   std::vector< std::tuple<TString,  int, float, float, TString, TString, TString, TString > > all_histo_infos;
   
   std::vector< std::tuple<TString,  int, float, float, TString, TString, TString, TString > > histo_infos = cov.get_histograms(input_filename,0);
   std::copy(histo_infos.begin(), histo_infos.end(), std::back_inserter(all_histo_infos));
   //  std::cout << "CV:" << std::endl;
+
   for (auto it = histo_infos.begin(); it != histo_infos.end(); it++){
     TString histoname = std::get<0>(*it);
     Int_t nbin = std::get<1>(*it);
@@ -121,7 +109,18 @@ int main( int argc, char** argv )
     
     //    std::cout << std::get<0>( *it)  << " " << std::get<1>(*it) << " " << std::get<4>(*it) << " " << std::get<5>(*it) << " " << std::get<6>(*it) << " " << std::get<7>(*it) << std::endl;
     htemp = new TH1F(histoname, histoname, nbin, llimit, hlimit);
-    map_histoname_hist[histoname] = htemp;
+    num = 1;
+    
+    bool flag_spec = cov.is_xs_chname(ch_name) ;
+    if (flag_spec){
+      int nbins1 = cov.get_xs_nsignals();
+      TString temp_histoname = histoname + "_signal";
+      htemp1 = new TH1F(temp_histoname, temp_histoname,nbins1, 0.5,nbins1+0.5);
+      temp_histoname = histoname + "_R";
+      htemp2 = new TH2F(temp_histoname, temp_histoname,nbin, llimit, hlimit,nbins1, 0.5,nbins1+0.5);
+      num = 3;
+    }
+    map_histoname_hists[histoname] = std::make_tuple(htemp, htemp1, htemp2, num);
   }
   //  std::cout << std::endl;
 
@@ -139,7 +138,8 @@ int main( int argc, char** argv )
     TString weight = std::get<7>(*it);
     //std::cout << std::get<0>( *it) << " " << std::get<1>(*it) << " " << std::get<4>(*it) << " " << std::get<5>(*it) << " " << std::get<6>(*it) << " " << std::get<7>(*it) << std::endl;
     htemp = new TH1F(histoname, histoname, nbin, llimit, hlimit);
-    map_histoname_hist[histoname] = htemp;
+        
+    map_histoname_hists[histoname] = std::make_tuple(htemp, (TH1F*)(0), (TH2F*)(0), 1);
   }
   //  std::cout << std::endl;
 
@@ -157,7 +157,7 @@ int main( int argc, char** argv )
     TString weight = std::get<7>(*it);
     //std::cout << std::get<0>( *it) << " " << std::get<1>(*it) << " " << std::get<4>(*it) << " " << std::get<5>(*it) << " " << std::get<6>(*it) << " " << std::get<7>(*it) << std::endl;
     htemp = new TH1F(histoname, histoname, nbin, llimit, hlimit);
-    map_histoname_hist[histoname] = htemp;
+    map_histoname_hists[histoname] = std::make_tuple(htemp, (TH1F*)(0), (TH2F*)(0),1);
   }
   //  std::cout << std::endl;
   
@@ -196,27 +196,6 @@ int main( int argc, char** argv )
   T_BDTvars->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars->SetBranchStatus("spt_angle_vertical",1);
 
-  // William numu/numubar BDT inputs
-
-  if (T_BDTvars->GetBranch("numu_1_score")) T_BDTvars->SetBranchStatus("numu_1_score",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_track_length")) T_BDTvars->SetBranchStatus("numu_cc_3_track_length",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_length_all")) T_BDTvars->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_angle_beam")) T_BDTvars->SetBranchStatus("cosmict_2_angle_beam",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_phi")) T_BDTvars->SetBranchStatus("cosmict_2_phi",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_length")) T_BDTvars->SetBranchStatus("numu_cc_3_max_length",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
-
   if (tagger.flag_nc_gamma_bdt){
     T_BDTvars->SetBranchStatus("nc_delta_score", 1);
     T_BDTvars->SetBranchStatus("nc_pio_score", 1);
@@ -234,6 +213,7 @@ int main( int argc, char** argv )
   T_eval->SetBranchStatus("stm_STM",1);
   T_eval->SetBranchStatus("stm_FullDead",1);
   T_eval->SetBranchStatus("stm_clusterlength",1);
+
   T_eval->SetBranchStatus("run",1);
   T_eval->SetBranchStatus("subrun",1);
   T_eval->SetBranchStatus("event",1);
@@ -303,12 +283,11 @@ int main( int argc, char** argv )
       T_PFeval->SetBranchStatus("truth_nuIntType",1);
       T_PFeval->SetBranchStatus("truth_muonMomentum",1);
       if(T_PFeval->GetBranch("truth_mother")){//prevents throwing an error for the non _PF files
-        T_PFeval->SetBranchStatus("truth_Ntrack",1); 
+        T_PFeval->SetBranchStatus("truth_Ntrack",1);
         T_PFeval->SetBranchStatus("truth_pdg",1); 
         T_PFeval->SetBranchStatus("truth_mother",1); 
-        T_PFeval->SetBranchStatus("truth_startMomentum",1); 
+        T_PFeval->SetBranchStatus("truth_startMomentum",1);
       }
-      
   }
   if(T_PFeval->GetBranch("reco_mother")){//prevents throwing an error for the non _PF files
     T_PFeval->SetBranchStatus("reco_Ntrack",1);
@@ -319,7 +298,6 @@ int main( int argc, char** argv )
   if (T_PFeval->GetBranch("reco_endXYZT")) T_PFeval->SetBranchStatus("reco_endXYZT",1);
   if (T_PFeval->GetBranch("reco_startMomentum")) T_PFeval->SetBranchStatus("reco_startMomentum",1);
 
-
   if (pfeval.flag_NCDelta){
     
       if (!flag_data){
@@ -327,7 +305,6 @@ int main( int argc, char** argv )
           T_PFeval->SetBranchStatus("truth_NprimPio",1);
       }
   }
-  
   if (pfeval.flag_recoprotonMomentum){
     T_PFeval->SetBranchStatus("reco_protonMomentum",1);
   }
@@ -338,18 +315,15 @@ int main( int argc, char** argv )
     if (!flag_data){
       T_PFeval->SetBranchStatus("truth_showerMomentum",1);
       T_PFeval->SetBranchStatus("truth_nuScatType",1);
-      // oscillation formula ...
-      T_PFeval->SetBranchStatus("truth_nu_momentum",1);
-      T_PFeval->SetBranchStatus("neutrino_type",1);
-      T_PFeval->SetBranchStatus("mcflux_ntype",1); // flux flavor before oscillation
-      T_PFeval->SetBranchStatus("mcflux_dk2gen",1);
-      T_PFeval->SetBranchStatus("mcflux_gen2vtx",1);
-      T_PFeval->SetBranchStatus("mcflux_ndecay",1);
     }
   }
 
   std::cout << "Total entries: " << T_eval->GetEntries() << std::endl;
-
+  std::shared_ptr<TMVA::Reader> reader = 0;
+  if(flag_bdt){
+    reader = std::shared_ptr<TMVA::Reader>(fetch_bdtreader(bdt_varname));
+    cov.set_bdt_reader(reader);
+  }
 
   for (Int_t i=0;i!=T_eval->GetEntries();i++){
     T_BDTvars->GetEntry(i);
@@ -357,7 +331,7 @@ int main( int argc, char** argv )
     T_KINEvars->GetEntry(i);
     T_PFeval->GetEntry(i);
     
-    if (!is_preselection(eval)) continue;
+    //    if (!is_preselection(eval)) continue;
 
     for (auto it = all_histo_infos.begin(); it != all_histo_infos.end(); it++){
       TString histoname = std::get<0>(*it);
@@ -368,31 +342,42 @@ int main( int argc, char** argv )
       TString ch_name = std::get<5>(*it);
       TString add_cut = std::get<6>(*it);
       TString weight = std::get<7>(*it);
- 
-      htemp = map_histoname_hist[histoname];
+
       // get kinematics variable ...
       double val = get_kine_var(kine, eval, pfeval, tagger, flag_data, var_name, reader);
       // get pass or not
       bool flag_pass = get_cut_pass(ch_name, add_cut, flag_data, eval, pfeval, tagger, kine, reader);
+      int signal_bin = -1;
+      if (cov.is_xs_chname(ch_name))
+	signal_bin = get_xs_signal_no(cov.get_cut_file(), cov.get_map_cut_xs_bin(), eval, pfeval, tagger, kine);
 
-      double osc_weight = 1.0;
-
-     
-      
-      // std::cout << weight << std::endl;
+      if (!((signal_bin != -1) || flag_pass)) continue;
       // get weight ...
       double weight_val = get_weight(weight, eval, pfeval, kine, tagger, cov.get_rw_info(), flag_data);
 
-      if (flag_osc && cov.is_osc_channel(ch_name) && (!flag_data)){
-	osc_weight = cov.get_osc_weight(eval, pfeval);
-	weight_val *= osc_weight;
-	if (weight == "cv_spline_cv_spline" || weight == "unity_unity" ||
-	    weight == "spline_spline" )
-	  weight_val *= osc_weight;
-      }
+      //  if (ch_name == "numuCC_signal_Enu_FC_overlay" && weight == "cv_spline") std::cout << "Xin: " << " " << flag_pass << " " << signal_bin << " " << weight_val << " " <<eval.run << " " << eval.subrun << " " << eval.event << std::endl;
       
-      if (flag_pass)
-	htemp->Fill(val,weight_val);
+      
+      //     htemp = map_histoname_hist[histoname];
+      auto tmp_hists = map_histoname_hists[histoname];
+      TH1F *h1 = std::get<0>(tmp_hists);
+      TH1F *h2 = std::get<1>(tmp_hists);
+      TH2F *h3 = std::get<2>(tmp_hists);
+      int num = std::get<3>(tmp_hists);
+      if (num==1){
+       	if (flag_pass) h1->Fill(val,  weight_val);
+      }else{
+       	if (signal_bin != -1){
+       	  if (flag_pass) h1->Fill(val, weight_val);
+       	  h2->Fill(signal_bin, weight_val);
+       	  if (flag_pass) h3->Fill(val, signal_bin, weight_val);
+       	}else{
+       	  std::cout << "[convt-hist-xs] Something wrong: cut/channel mismatch !" << std::endl;
+       	}
+      } // else
+ 
+
+
     }
   }
   
@@ -405,16 +390,27 @@ int main( int argc, char** argv )
   T->Branch("pot",&total_pot,"pot/D");
   T->Fill();
   
-  for (auto it = map_histoname_hist.begin(); it!= map_histoname_hist.end(); it++){
-    //std::cout<<"DEBUG: "<<it->first<<" "<<it->second->GetName()<<" "<<it->second->GetSum()<<"\n";
-    it->second->SetDirectory(file1);
+  for (auto it = map_histoname_hists.begin(); it!= map_histoname_hists.end(); it++){
+  //   //std::cout<<"DEBUG: "<<it->first<<" "<<it->second->GetName()<<" "<<it->second->GetSum()<<"\n";
+    TH1F *h1 = std::get<0>(it->second);
+    TH1F *h2 = std::get<1>(it->second);
+    TH2F *h3 = std::get<2>(it->second);
+    int num = std::get<3>(it->second);
+    if (num==1){
+      h1->SetDirectory(file1);
+    }else{
+      h1->SetDirectory(file1);
+      h2->SetDirectory(file1);
+      h3->SetDirectory(file1);
+    }
+    //   it->second->SetDirectory(file1);
   }
   
   file1->Write();
   file1->Close();
 
   
-   
+     
   
   
   return 0;

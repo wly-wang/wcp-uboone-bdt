@@ -162,7 +162,7 @@ int main( int argc, char** argv )
   //  std::cout << std::endl;
   
   // fill histogram ...
-  T_BDTvars->SetBranchStatus("*",0);
+  T_BDTvars->SetBranchStatus("*",1);
   T_BDTvars->SetBranchStatus("numu_cc_flag",1);
   T_BDTvars->SetBranchStatus("numu_score",1);
   T_BDTvars->SetBranchStatus("nue_score",1);
@@ -195,27 +195,6 @@ int main( int argc, char** argv )
   T_BDTvars->SetBranchStatus("gap_n_bad",1);
   T_BDTvars->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars->SetBranchStatus("spt_angle_vertical",1);
-
-  // William numu/numubar BDT inputs
-
-  if (T_BDTvars->GetBranch("numu_1_score")) T_BDTvars->SetBranchStatus("numu_1_score",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_track_length")) T_BDTvars->SetBranchStatus("numu_cc_3_track_length",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_length_all")) T_BDTvars->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_angle_beam")) T_BDTvars->SetBranchStatus("cosmict_2_angle_beam",1);
-
-  if (T_BDTvars->GetBranch("cosmict_2_phi")) T_BDTvars->SetBranchStatus("cosmict_2_phi",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_length")) T_BDTvars->SetBranchStatus("numu_cc_3_max_length",1);
-
-  if (T_BDTvars->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
 
   if (tagger.flag_nc_gamma_bdt){
     T_BDTvars->SetBranchStatus("nc_delta_score", 1);

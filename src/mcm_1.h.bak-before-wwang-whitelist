@@ -470,27 +470,6 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   T_BDTvars_cv->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars_cv->SetBranchStatus("spt_angle_vertical",1);
 
-  // William numu/numubar BDT inputs
-
-  if (T_BDTvars_cv->GetBranch("numu_1_score")) T_BDTvars_cv->SetBranchStatus("numu_1_score",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_track_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_track_length",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_length_all")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars_cv->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars_cv->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_angle_beam")) T_BDTvars_cv->SetBranchStatus("cosmict_2_angle_beam",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_phi")) T_BDTvars_cv->SetBranchStatus("cosmict_2_phi",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_length",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
-
   if (tagger_cv.flag_nc_gamma_bdt){
     T_BDTvars_cv->SetBranchStatus("nc_delta_score", 1);
     T_BDTvars_cv->SetBranchStatus("nc_pio_score", 1);
@@ -646,27 +625,6 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   T_BDTvars_det->SetBranchStatus("gap_n_bad",1);
   T_BDTvars_det->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars_det->SetBranchStatus("spt_angle_vertical",1);
-
-   // William numu/numubar BDT inputs
-
-   if (T_BDTvars_det->GetBranch("numu_1_score")) T_BDTvars_det->SetBranchStatus("numu_1_score",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_track_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_track_length",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_length_all")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars_det->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars_det->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_angle_beam")) T_BDTvars_det->SetBranchStatus("cosmict_2_angle_beam",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_phi")) T_BDTvars_det->SetBranchStatus("cosmict_2_phi",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_length",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
 
    if (tagger_det.flag_nc_gamma_bdt){
     T_BDTvars_det->SetBranchStatus("nc_delta_score", 1);

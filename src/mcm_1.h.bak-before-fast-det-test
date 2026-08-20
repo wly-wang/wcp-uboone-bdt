@@ -74,7 +74,7 @@ void LEEana::CovMatrix::gen_det_cov_matrix(int run, std::map<int, TH1F*>& map_co
   }
   
   // working on the bootstrapping ...
-  for (int qx = 0; qx != 1000; qx++){
+  for (int qx = 0; qx != 10; qx++){
     if (qx % 500 ==0) std::cout << qx << std::endl;
     
     for (int i=0;i!=rows;i++){
@@ -166,7 +166,7 @@ void LEEana::CovMatrix::gen_det_cov_matrix(int run, std::map<int, TH1F*>& map_co
 
   TPrincipal prin_full(rows, "ND");
   TRandom3 random3(0);
-  for (int i=0;i!=16000;i++){
+  for (int i=0;i!=100;i++){
     TMatrixD matrix_element(rows,1);
     for (int j=0;j!=rows;j++){
       if (matrix_eigenvalue(j) >=0)
@@ -470,27 +470,6 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   T_BDTvars_cv->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars_cv->SetBranchStatus("spt_angle_vertical",1);
 
-  // William numu/numubar BDT inputs
-
-  if (T_BDTvars_cv->GetBranch("numu_1_score")) T_BDTvars_cv->SetBranchStatus("numu_1_score",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_track_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_track_length",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_length_all")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars_cv->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars_cv->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_angle_beam")) T_BDTvars_cv->SetBranchStatus("cosmict_2_angle_beam",1);
-
-  if (T_BDTvars_cv->GetBranch("cosmict_2_phi")) T_BDTvars_cv->SetBranchStatus("cosmict_2_phi",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_length",1);
-
-  if (T_BDTvars_cv->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars_cv->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
-
   if (tagger_cv.flag_nc_gamma_bdt){
     T_BDTvars_cv->SetBranchStatus("nc_delta_score", 1);
     T_BDTvars_cv->SetBranchStatus("nc_pio_score", 1);
@@ -646,27 +625,6 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   T_BDTvars_det->SetBranchStatus("gap_n_bad",1);
   T_BDTvars_det->SetBranchStatus("spt_angle_beam",1);
   T_BDTvars_det->SetBranchStatus("spt_angle_vertical",1);
-
-   // William numu/numubar BDT inputs
-
-   if (T_BDTvars_det->GetBranch("numu_1_score")) T_BDTvars_det->SetBranchStatus("numu_1_score",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_track_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_track_length",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_length_all")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_length_all",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_dQ_dx_front")) T_BDTvars_det->SetBranchStatus("cosmict_2_dQ_dx_front",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_dQ_dx_end")) T_BDTvars_det->SetBranchStatus("cosmict_2_dQ_dx_end",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_angle_beam")) T_BDTvars_det->SetBranchStatus("cosmict_2_angle_beam",1);
-
-   if (T_BDTvars_det->GetBranch("cosmict_2_phi")) T_BDTvars_det->SetBranchStatus("cosmict_2_phi",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_length",1);
-
-   if (T_BDTvars_det->GetBranch("numu_cc_3_max_muon_length")) T_BDTvars_det->SetBranchStatus("numu_cc_3_max_muon_length",1);
-
 
    if (tagger_det.flag_nc_gamma_bdt){
     T_BDTvars_det->SetBranchStatus("nc_delta_score", 1);

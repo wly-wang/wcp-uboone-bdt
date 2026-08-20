@@ -692,13 +692,8 @@ TMVA::Reader* LEEana::fetch_bdtreader(TString var_name){
     reader->AddVariable("numu_cc_3_max_muon_length", &numu_cc_3_max_muon_length);
     reader->AddVariable("has_reco_michel", &has_reco_michel);
 
-    reader->BookMVA(var_name+"_FHC_others",    "bdt_weights/"+var_name+"_FHC_others.xml");
-    reader->BookMVA(var_name+"_FHC_numuCC",    "bdt_weights/"+var_name+"_FHC_numuCC.xml");
-    reader->BookMVA(var_name+"_FHC_numubarCC", "bdt_weights/"+var_name+"_FHC_numubarCC.xml");
-
-    reader->BookMVA(var_name+"_RHC_others",    "bdt_weights/"+var_name+"_RHC_others.xml");
-    reader->BookMVA(var_name+"_RHC_numuCC",    "bdt_weights/"+var_name+"_RHC_numuCC.xml");
-    reader->BookMVA(var_name+"_RHC_numubarCC", "bdt_weights/"+var_name+"_RHC_numubarCC.xml");
+		reader->BookMVA(var_name+"_FHC", "bdt_weights/"+var_name+"_FHC.xml");
+		reader->BookMVA(var_name+"_RHC", "bdt_weights/"+var_name+"_RHC.xml");
 
 		return reader;
 	}
