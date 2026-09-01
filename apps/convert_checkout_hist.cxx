@@ -6,6 +6,7 @@
 #include "TROOT.h"
 #include "TMath.h"
 #include "TH1F.h"
+#include "TH1D.h"
 #include "TFile.h"
 #include "TTree.h"
 
@@ -350,14 +351,114 @@ int main( int argc, char** argv )
 
   std::cout << "Total entries: " << T_eval->GetEntries() << std::endl;
 
+  TTree *T_wwang_roc = new TTree("wwang_roc", "event-level William multiclass BDT outputs");
+  T_wwang_roc->SetDirectory(0);
+
+  Int_t roc_run = 0;
+  Int_t roc_subrun = 0;
+  Int_t roc_event = 0;
+  Int_t roc_truth_class = -1; // 0 others, 1 numuCC, 2 numubarCC
+  Int_t roc_is_fhc = -1;
+
+  Float_t roc_raw_others = -999.;
+  Float_t roc_raw_numu = -999.;
+  Float_t roc_raw_numubar = -999.;
+  Float_t roc_p_others = -999.;
+  Float_t roc_p_numu = -999.;
+  Float_t roc_p_numubar = -999.;
+  Float_t roc_score = -999.;
+  Double_t roc_weight = 1.0;
+
+  T_wwang_roc->Branch("run", &roc_run, "run/I");
+  T_wwang_roc->Branch("subrun", &roc_subrun, "subrun/I");
+  T_wwang_roc->Branch("event", &roc_event, "event/I");
+  T_wwang_roc->Branch("truth_class", &roc_truth_class, "truth_class/I");
+  T_wwang_roc->Branch("is_fhc", &roc_is_fhc, "is_fhc/I");
+
+  T_wwang_roc->Branch("raw_others", &roc_raw_others, "raw_others/F");
+  T_wwang_roc->Branch("raw_numu", &roc_raw_numu, "raw_numu/F");
+  T_wwang_roc->Branch("raw_numubar", &roc_raw_numubar, "raw_numubar/F");
+
+  T_wwang_roc->Branch("p_others", &roc_p_others, "p_others/F");
+  T_wwang_roc->Branch("p_numu", &roc_p_numu, "p_numu/F");
+  T_wwang_roc->Branch("p_numubar", &roc_p_numubar, "p_numubar/F");
+
+  T_wwang_roc->Branch("score", &roc_score, "score/F");
+  T_wwang_roc->Branch("weight", &roc_weight, "weight/D");
+
+  TH1D *h_wwang_cutflow_unweighted =
+    new TH1D("h_wwang_cutflow_unweighted",
+             "William numu/numubar unweighted cutflow;Cut;Entries",
+             6, 0.5, 6.5);
+
+  h_wwang_cutflow_unweighted->SetDirectory(0);
+
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(1, "None");
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(2, "genNuSelection");
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(3, "fiducialVol");
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(4, "muonCut");
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(5, "FC");
+  h_wwang_cutflow_unweighted->GetXaxis()->SetBinLabel(6, "PC");
+
+  auto fill_wwang_cutflow = [&](int bin) {
+    h_wwang_cutflow_unweighted->AddBinContent(bin, 1.0);
+  };
+
 
   for (Int_t i=0;i!=T_eval->GetEntries();i++){
     T_BDTvars->GetEntry(i);
     T_eval->GetEntry(i);
     T_KINEvars->GetEntry(i);
     T_PFeval->GetEntry(i);
+
+    // Python-equivalent unweighted cutflow.
+    // Count raw dataframe rows, not POT/event weights.
+    //
+    // Python applies a -1 cm reco_nuvtxX shift to EXT/MC/DIRT, but not DATA.
+    // In this executable, flag_data is true for DATA and EXT, so use ext_pot
+    // to identify EXT.
+    double reco_nuvtxX_for_cutflow = pfeval.reco_nuvtxX;
+    if (!flag_data || ext_pot != 0) {
+      reco_nuvtxX_for_cutflow -= 1.0;
+    }
+
+    bool pass_cutflow_none = true;
+
+    bool pass_cutflow_gen =
+      pass_cutflow_none &&
+      tagger.numu_cc_flag >= 0;
+
+    bool pass_cutflow_fv =
+      pass_cutflow_gen &&
+      reco_nuvtxX_for_cutflow > (-1.55 + 7.55) &&
+      reco_nuvtxX_for_cutflow < (254.8 - 3.0) &&
+      pfeval.reco_nuvtxY > (-115.53 + 3.0) &&
+      pfeval.reco_nuvtxY < (117.47 - 17.47) &&
+      pfeval.reco_nuvtxZ > (0.1 + 15.0) &&
+      pfeval.reco_nuvtxZ < (1036.9 - 3.0);
+
+    bool pass_cutflow_mu =
+      pass_cutflow_fv &&
+      pfeval.reco_muonMomentum[3] != -1;
+
+    bool pass_cutflow_fc =
+      pass_cutflow_mu &&
+      eval.match_isFC == 1;
+
+    bool pass_cutflow_pc =
+      pass_cutflow_mu &&
+      eval.match_isFC != 1;
+
+    if (pass_cutflow_none) fill_wwang_cutflow(1);
+    if (pass_cutflow_gen)  fill_wwang_cutflow(2);
+    if (pass_cutflow_fv)   fill_wwang_cutflow(3);
+    if (pass_cutflow_mu)   fill_wwang_cutflow(4);
+    if (pass_cutflow_fc)   fill_wwang_cutflow(5);
+    if (pass_cutflow_pc)   fill_wwang_cutflow(6);
     
     if (!is_preselection(eval)) continue;
+
+    bool filled_wwang_roc_this_event = false;
 
     for (auto it = all_histo_infos.begin(); it != all_histo_infos.end(); it++){
       TString histoname = std::get<0>(*it);
@@ -391,8 +492,48 @@ int main( int argc, char** argv )
 	  weight_val *= osc_weight;
       }
       
-      if (flag_pass)
-	htemp->Fill(val,weight_val);
+      if (flag_pass) {
+        htemp->Fill(val, weight_val);
+
+        bool is_wwang_truth_channel =
+          ch_name.EndsWith("_numu") ||
+          ch_name.EndsWith("_numubar") ||
+          ch_name.EndsWith("_other");
+
+        if (!flag_data &&
+            !filled_wwang_roc_this_event &&
+            var_name == "wwang_numu_numubar_BDT" &&
+            is_wwang_truth_channel &&
+            wwang_last_bdt_valid) {
+
+          roc_run = eval.run;
+          roc_subrun = eval.subrun;
+          roc_event = eval.event;
+          roc_is_fhc = isFHC(eval) ? 1 : 0;
+
+          if (eval.truth_isCC == 1 && eval.truth_nuPdg == 14) {
+            roc_truth_class = 1;
+          } else if (eval.truth_isCC == 1 && eval.truth_nuPdg == -14) {
+            roc_truth_class = 2;
+          } else {
+            roc_truth_class = 0;
+          }
+
+          roc_raw_others = wwang_last_raw_others;
+          roc_raw_numu = wwang_last_raw_numu;
+          roc_raw_numubar = wwang_last_raw_numubar;
+
+          roc_p_others = wwang_last_p_others;
+          roc_p_numu = wwang_last_p_numu;
+          roc_p_numubar = wwang_last_p_numubar;
+
+          roc_score = wwang_last_score;
+          roc_weight = weight_val;
+
+          T_wwang_roc->Fill();
+          filled_wwang_roc_this_event = true;
+        }
+      }
     }
   }
   
@@ -404,7 +545,10 @@ int main( int argc, char** argv )
   T->SetDirectory(file1);
   T->Branch("pot",&total_pot,"pot/D");
   T->Fill();
-  
+
+  T_wwang_roc->SetDirectory(file1);
+  h_wwang_cutflow_unweighted->SetDirectory(file1);
+
   for (auto it = map_histoname_hist.begin(); it!= map_histoname_hist.end(); it++){
     //std::cout<<"DEBUG: "<<it->first<<" "<<it->second->GetName()<<" "<<it->second->GetSum()<<"\n";
     it->second->SetDirectory(file1);

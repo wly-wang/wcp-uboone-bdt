@@ -112,10 +112,18 @@ namespace LEEana{
 
   int mcc8_pmuon_costheta_bin(float pmuon, float costh);
   int alt_var_index(std::string var1, float val1, std::string var2, float val2, std::string config="./configurations/alt_var_xbins.txt");
-
   // William's numu/numubar separation BDT
   float calc_wwang_numu_numubar_BDT(std::shared_ptr<TMVA::Reader> reader, KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool is_fhc=1);
   bool isFHC(EvalInfo& eval);
+
+  inline bool wwang_last_bdt_valid = false;
+  inline float wwang_last_raw_others = -999.;
+  inline float wwang_last_raw_numu = -999.;
+  inline float wwang_last_raw_numubar = -999.;
+  inline float wwang_last_p_others = -999.;
+  inline float wwang_last_p_numu = -999.;
+  inline float wwang_last_p_numubar = -999.;
+  inline float wwang_last_score = -999.;
 
   std::map<std::string, TH1F> map_var_hist; // variable name and binning
 }
@@ -4148,6 +4156,14 @@ int LEEana::alt_var_index(std::string var1, float val1, std::string var2, float 
 }
 
 float LEEana::calc_wwang_numu_numubar_BDT(std::shared_ptr<TMVA::Reader> reader, KineInfo& kine, EvalInfo& eval, PFevalInfo& pfeval, TaggerInfo& tagger, bool is_fhc){
+  wwang_last_bdt_valid = false;
+  wwang_last_raw_others = -999.;
+  wwang_last_raw_numu = -999.;
+  wwang_last_raw_numubar = -999.;
+  wwang_last_p_others = -999.;
+  wwang_last_p_numu = -999.;
+  wwang_last_p_numubar = -999.;
+  wwang_last_score = -999.;
 
   float Num_Proton = 0.;
   float Num_Gamma = 0.;
@@ -4303,8 +4319,10 @@ for (int i = 0; i < pfeval.reco_Ntrack; i++) {
     raw_numubar = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_numubarCC");
   }
 
-  if (std::isnan(raw_others) || std::isnan(raw_numu) || std::isnan(raw_numubar))
+  if (!std::isfinite(raw_others) || !std::isfinite(raw_numu) || !std::isfinite(raw_numubar)) {
+    wwang_last_bdt_valid = false;
     return -5.;
+  }
 
   double max_raw = raw_others;
   if (raw_numu > max_raw) max_raw = raw_numu;
@@ -4319,7 +4337,18 @@ for (int i = 0; i < pfeval.reco_Ntrack; i++) {
   double p_numu    = e_numu / norm;
   double p_numubar = e_numubar / norm;
 
-  return -3.0*p_others - p_numu + p_numubar;
+  double score = -3.0*p_others - p_numu + p_numubar;
+
+  wwang_last_bdt_valid = true;
+  wwang_last_raw_others = raw_others;
+  wwang_last_raw_numu = raw_numu;
+  wwang_last_raw_numubar = raw_numubar;
+  wwang_last_p_others = p_others;
+  wwang_last_p_numu = p_numu;
+  wwang_last_p_numubar = p_numubar;
+  wwang_last_score = score;
+
+  return score;
 }
 
 // fetch FHC or RHC run from here :
