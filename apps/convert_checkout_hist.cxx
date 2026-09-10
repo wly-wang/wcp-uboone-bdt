@@ -411,6 +411,14 @@ int main( int argc, char** argv )
     T_KINEvars->GetEntry(i);
     T_PFeval->GetEntry(i);
 
+    // William analysis split:
+    // The BDT is developed on odd event-run-number MC overlay events.
+    // For final analysis/application, keep only even event-run-number MC overlay events.
+    // Do not apply this veto to DATA, EXT, or DIRT.
+    if (file_type == 2 && eval.run % 2 != 0) {
+        continue;
+    }
+
     // Python-equivalent unweighted cutflow.
     // Count raw dataframe rows, not POT/event weights.
     //
