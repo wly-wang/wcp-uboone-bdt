@@ -4305,24 +4305,48 @@ for (int i = 0; i < pfeval.reco_Ntrack; i++) {
                               cosmict_2_dQ_dx_front, cosmict_2_dQ_dx_end, cosmict_2_angle_beam, 
                               cosmict_2_phi, numu_cc_3_max_length, numu_cc_3_max_muon_length,
                               has_reco_michel};
-  float raw_others = -999.;
-  float raw_numu = -999.;
-  float raw_numubar = -999.;
+  double tmva_others = -999.;
+  double tmva_numu = -999.;
+  double tmva_numubar = -999.;
 
   if (is_fhc) {
-    raw_others  = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_others");
-    raw_numu    = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_numuCC");
-    raw_numubar = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_FHC_numubarCC");
+    tmva_others  = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_FHC_others");
+    tmva_numu    = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_FHC_numuCC");
+    tmva_numubar = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_FHC_numubarCC");
   } else {
-    raw_others  = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_others");
-    raw_numu    = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_numuCC");
-    raw_numubar = reader->EvaluateMVA(values, "wwang_numu_numubar_BDT_RHC_numubarCC");
+    tmva_others  = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_RHC_others");
+    tmva_numu    = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_RHC_numuCC");
+    tmva_numubar = reader->EvaluateMVA(
+      values, "wwang_numu_numubar_BDT_RHC_numubarCC");
   }
 
-  if (!std::isfinite(raw_others) || !std::isfinite(raw_numu) || !std::isfinite(raw_numubar)) {
+  if (!std::isfinite(tmva_others) ||
+      !std::isfinite(tmva_numu) ||
+      !std::isfinite(tmva_numubar)) {
     wwang_last_bdt_valid = false;
     return -5.;
   }
+
+  // TMVA's Grad BDT response is tanh(sum of tree leaves). Undo that
+  // transformation before applying XGBoost's multiclass softmax.
+  const double tmva_response_limit = 1.0 - 1e-15;
+
+  auto xgboost_margin = [tmva_response_limit](double response) {
+    const double bounded_response = std::max(
+      -tmva_response_limit,
+      std::min(tmva_response_limit, response)
+    );
+    return std::atanh(bounded_response);
+  };
+
+  const double raw_others = xgboost_margin(tmva_others);
+  const double raw_numu = xgboost_margin(tmva_numu);
+  const double raw_numubar = xgboost_margin(tmva_numubar);
 
   double max_raw = raw_others;
   if (raw_numu > max_raw) max_raw = raw_numu;

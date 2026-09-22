@@ -90,6 +90,18 @@ int main( int argc, char** argv )
   }
   double ext_pot = cov.get_ext_pot(input_filename);
   if (ext_pot != 0) total_pot = ext_pot;
+
+  const auto inputfile_info = cov.get_map_inputfile_info();
+  const auto inputfile_it = inputfile_info.find(input_filename);
+
+  if (inputfile_it == inputfile_info.end()) {
+    std::cerr << "Input file is not present in the covariance configuration: "
+              << input_filename << std::endl;
+    return 1;
+  }
+
+  const int file_type = std::get<0>(inputfile_it->second);
+  const bool is_mc_overlay = file_type == 2 || file_type == 20;
   
   std::cout << "Total POT: " << total_pot << " external POT: " << ext_pot << std::endl;
   std::shared_ptr<TMVA::Reader> reader = 0;
@@ -415,9 +427,6 @@ int main( int argc, char** argv )
     // The BDT is developed on odd event-run-number MC overlay events.
     // For final analysis/application, keep only even event-run-number MC overlay events.
     // Do not apply this veto to DATA, EXT, or DIRT.
-    if (file_type == 2 && eval.run % 2 != 0) {
-        continue;
-    }
 
     // Python-equivalent unweighted cutflow.
     // Count raw dataframe rows, not POT/event weights.
@@ -500,7 +509,9 @@ int main( int argc, char** argv )
 	  weight_val *= osc_weight;
       }
       
-      if (flag_pass) {
+      // Apply the analysis partition after the event has passed the cuts.
+      // Keep even run numbers for MC overlay; keep all DATA, EXT, and DIRT.
+      if (flag_pass && (!is_mc_overlay || eval.run % 2 == 0)) {
         htemp->Fill(val, weight_val);
 
         bool is_wwang_truth_channel =
