@@ -1319,6 +1319,12 @@ void LEEana::CovMatrix::fill_xs_histograms(std::map<TString, std::set<std::tuple
 }
 
 std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_weights_xs(TString input_filename, std::map<TString, std::set<std::tuple<float, float, std::vector<float>, std::vector<int>, std::set<std::tuple<int, float, bool, int> > > > >& map_passed_events, std::map<TString, double>& map_filename_pot, std::map<TString, std::tuple<int, int, int, TString>>& map_histoname_infos){
+
+  const auto input_info_it = map_inputfile_info.find(input_filename);
+  const bool is_mc_overlay =
+    input_info_it != map_inputfile_info.end() &&
+    (std::get<0>(input_info_it->second) == 2 ||
+     std::get<0>(input_info_it->second) == 20);
   TFile *file = new TFile(input_filename);
 
   TTree *T_BDTvars = (TTree*)file->Get("wcpselection/T_BDTvars");
@@ -1601,7 +1607,9 @@ std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_wei
   double total_pot = 0;
   for (Int_t i=0;i!=T_pot->GetEntries();i++){
     T_pot->GetEntry(i);
-    total_pot += pot.pot_tor875;
+    if (!is_mc_overlay || pot.runNo % 2 == 0) {
+      total_pot += pot.pot_tor875;
+    }
   }
   // total POT calculations ...
   map_filename_pot[input_filename] = total_pot;
@@ -2207,7 +2215,10 @@ std::pair<std::vector<int>, std::vector<int> > LEEana::CovMatrix::get_events_wei
       // if (max_length < std::get<3>(event_info).size()) max_length = std::get<3>(event_info).size();
       }
       
-      set_events.insert(event_info);
+      // Commit only the even-run analysis half after evaluating the cuts.
+      if (!is_mc_overlay || eval.run % 2 == 0) {
+        set_events.insert(event_info);
+      }
       //  temp_sum ++;
     }
     

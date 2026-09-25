@@ -383,9 +383,14 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
  }
  
 
- void LEEana::CovMatrix::get_events_info(TString input_filename, std::map<TString, std::vector< std::tuple<int, int, double, double, std::set<std::tuple<int, double, bool, double, bool> > > > > &map_all_events, std::map<TString, double>& map_filename_pot,  std::map<TString, std::tuple<int, int, int, TString>>& map_histoname_infos){
+void LEEana::CovMatrix::get_events_info(TString input_filename, std::map<TString, std::vector< std::tuple<int, int, double, double, std::set<std::tuple<int, double, bool, double, bool> > > > > &map_all_events, std::map<TString, double>& map_filename_pot,  std::map<TString, std::tuple<int, int, int, TString>>& map_histoname_infos){
+  const auto input_info_it = map_inputfile_info.find(input_filename);
+  const bool is_mc_overlay =
+    input_info_it != map_inputfile_info.end() &&
+    (std::get<0>(input_info_it->second) == 2 ||
+     std::get<0>(input_info_it->second) == 20);
 
-   //   std::cout << input_filename << std::endl;
+  //   std::cout << input_filename << std::endl;
   TFile *file = new TFile(input_filename);
 
   TTree *T_BDTvars_cv = (TTree*)file->Get("wcpselection/T_BDTvars_cv");
@@ -430,8 +435,12 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   double total_pot = 0;
   for (Int_t i=0;i!=T_pot_cv->GetEntries();i++){
     T_pot_cv->GetEntry(i);
-    total_pot += pot_cv.pot_tor875;
+
+    if (!is_mc_overlay || pot_cv.runNo % 2 == 0) {
+      total_pot += pot_cv.pot_tor875;
+    }
   }
+
   // total POT calculations ...
   map_filename_pot[input_filename] = total_pot;
 
@@ -844,7 +853,20 @@ void LEEana::CovMatrix::fill_det_histograms(std::map<TString, TH1D*> map_filenam
   }
   
   
-  
+  // Apply the analysis split after evaluating the CV and detector selections.
+  if (is_mc_overlay) {
+    decltype(vec_events) analysis_events;
+    analysis_events.reserve(vec_events.size());
+
+    for (const auto& event : vec_events) {
+      // Tuple element zero was filled from eval_cv.run.
+      if (std::get<0>(event) % 2 == 0) {
+        analysis_events.push_back(event);
+      }
+    }
+
+    vec_events.swap(analysis_events);
+  }
   map_all_events[input_filename] = vec_events;
 
   // delete file; // avoid ROOT double-delete crash on detvar inputs

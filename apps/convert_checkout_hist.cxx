@@ -83,14 +83,6 @@ int main( int argc, char** argv )
   set_tree_address(T_pot, pot);
   set_tree_address(T_KINEvars, kine);
 
-  double total_pot = 0;
-  for (Int_t i=0;i!=T_pot->GetEntries();i++){
-    T_pot->GetEntry(i);
-    total_pot += pot.pot_tor875;
-  }
-  double ext_pot = cov.get_ext_pot(input_filename);
-  if (ext_pot != 0) total_pot = ext_pot;
-
   const auto inputfile_info = cov.get_map_inputfile_info();
   const auto inputfile_it = inputfile_info.find(input_filename);
 
@@ -102,8 +94,21 @@ int main( int argc, char** argv )
 
   const int file_type = std::get<0>(inputfile_it->second);
   const bool is_mc_overlay = file_type == 2 || file_type == 20;
+
+  double total_pot = 0;
+  for (Int_t i = 0; i != T_pot->GetEntries(); i++) {
+    T_pot->GetEntry(i);
+
+    if (!is_mc_overlay || pot.runNo % 2 == 0) {
+      total_pot += pot.pot_tor875;
+    }
+  }
+
+  double ext_pot = cov.get_ext_pot(input_filename);
+  if (ext_pot != 0) total_pot = ext_pot;
   
-  std::cout << "Total POT: " << total_pot << " external POT: " << ext_pot << std::endl;
+  std::cout << "Total POT: " << total_pot
+            << " external POT: " << ext_pot << std::endl;
   std::shared_ptr<TMVA::Reader> reader = 0;
   if(flag_bdt){
     reader = std::shared_ptr<TMVA::Reader>(fetch_bdtreader(bdt_varname));
