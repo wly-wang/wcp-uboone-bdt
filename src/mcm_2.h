@@ -96,7 +96,9 @@ void LEEana::CovMatrix::gen_xf_cov_matrix(int run, std::map<int, TH1F*>& map_cov
       for (auto it = map_pred_covch_histos.begin(); it!=map_pred_covch_histos.end();it++){
 	//std::cout << it->first << std::endl;
 	int covch = it->first;
-	TH1F *hpred = map_covch_hist[covch];
+	auto hpred_it = map_covch_hist.find(covch);
+	if (hpred_it == map_covch_hist.end() || !hpred_it->second) continue;
+	TH1F *hpred = hpred_it->second;
 	hpred->Reset();
 	
 	for (auto it1 = it->second.begin(); it1 != it->second.end(); it1++){
@@ -177,7 +179,9 @@ void LEEana::CovMatrix::gen_xf_cov_matrix(int run, std::map<int, TH1F*>& map_cov
   for (auto it = map_pred_covch_histos.begin(); it!=map_pred_covch_histos.end();it++){
     //std::cout << it->first << std::endl;
     int covch = it->first;
-    TH1F *hpred = map_covch_hist[covch];
+    auto hpred_it = map_covch_hist.find(covch);
+    if (hpred_it == map_covch_hist.end() || !hpred_it->second) continue;
+    TH1F *hpred = hpred_it->second;
     hpred->Reset();
     
     for (auto it1 = it->second.begin(); it1 != it->second.end(); it1++){
