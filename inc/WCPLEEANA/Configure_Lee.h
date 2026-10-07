@@ -60,21 +60,21 @@ namespace config_Lee
 
 
   
-  TString spectra_file = "./new_TLee_input_opendata5e19/merge.root";
-  TString flux_Xs_directory = "./new_TLee_input_opendata5e19/flux_Xs/";
-  TString detector_directory = "./new_TLee_input_opendata5e19/det/";
-  TString mc_directory = "./new_TLee_input_opendata5e19/mc_stat/";
+  TString spectra_file = "/home/s2106059/LEEana/wwang_final_covariance_inputs/merge.root";
+  TString flux_Xs_directory = "/home/s2106059/LEEana/wwang_final_covariance_inputs/XsFlux/";
+  TString detector_directory = "/home/s2106059/LEEana/wwang_final_covariance_inputs/DetVar/";
+  TString mc_directory = "/home/s2106059/LEEana/wwang_final_covariance_inputs/mc_stat/";
 
 
   
-  int channels_observation = 7;// data channels (=hdata_obsch_# in spectra_file above)
+  int channels_observation = 2; // FHC and RHC BDT-score spectra
                                // which is equal to the channels after collapse
 
   int syst_cov_flux_Xs_begin = 1;// files in flux_Xs_directory above
-  int syst_cov_flux_Xs_end   = 19;//cov_18.root is uncorrelated reweighting and cov_19.root is correlated
+  int syst_cov_flux_Xs_end = 17; // available XF categories
  
   int syst_cov_mc_stat_begin = 0;// files in mc_directory above
-  int syst_cov_mc_stat_end   = 99;
+  int syst_cov_mc_stat_end = 0; // fixed-strength nominal MC-stat file
    
 
   /// some places may need to be changed when use different file-formats
@@ -86,7 +86,7 @@ namespace config_Lee
   
   ////////// display graphics flag
 
-  bool flag_display_graphics = 1;
+  bool flag_display_graphics = 0;
   
   ////////// systematics flag
   

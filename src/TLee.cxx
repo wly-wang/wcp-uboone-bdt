@@ -2432,26 +2432,18 @@ void TLee::Set_Spectra_MatrixCov()
 
   ////////////////////////////////////// pred
   
-  map_input_spectrum_ch_str[1] = "nueCC_FC_norm";
-  map_input_spectrum_ch_str[2] = "nueCC_PC_norm";
-  map_input_spectrum_ch_str[3] = "numuCC_FC_norm";
-  map_input_spectrum_ch_str[4] = "numuCC_PC_norm";
-  map_input_spectrum_ch_str[5] = "CCpi0_FC_norm";
-  map_input_spectrum_ch_str[6] = "CCpi0_PC_norm";
-  map_input_spectrum_ch_str[7] = "NCpi0_norm";
-  map_input_spectrum_ch_str[8] = "Lee_FC";
-  map_input_spectrum_ch_str[9] = "Lee_PC"; 
-  map_input_spectrum_ch_str[10]= "nueCC_FC_ext";
-  map_input_spectrum_ch_str[11]= "nueCC_PC_ext";
-  map_input_spectrum_ch_str[12]= "numuCC_FC_ext";
-  map_input_spectrum_ch_str[13]= "numuCC_PC_ext";
-  map_input_spectrum_ch_str[14]= "CCpi0_FC_ext";
-  map_input_spectrum_ch_str[15]= "CCpi0_PC_ext";
-  map_input_spectrum_ch_str[16]= "NCpi0_ext";
+  map_input_spectrum_ch_str[1]  = "FHC_numu";
+  map_input_spectrum_ch_str[2]  = "FHC_numubar";
+  map_input_spectrum_ch_str[3]  = "FHC_other";
+  map_input_spectrum_ch_str[4]  = "FHC_ext";
+  map_input_spectrum_ch_str[5]  = "FHC_dirt";
+  map_input_spectrum_ch_str[6]  = "RHC_numu";
+  map_input_spectrum_ch_str[7]  = "RHC_numubar";
+  map_input_spectrum_ch_str[8]  = "RHC_other";
+  map_input_spectrum_ch_str[9]  = "RHC_ext";
+  map_input_spectrum_ch_str[10] = "RHC_dirt";
 
-  /// flag for LEE channels corresponding to the cov_input.txt
-  map_Lee_ch[8] = 1;
-  map_Lee_ch[9] = 1;
+  // This analysis has no LEE-strength-scaled prediction component.
   
 
   ///////////////////////////////////////
